@@ -34,19 +34,18 @@ def create_materialized_view(postgres_engine):
     CREATE MATERIALIZED VIEW IF NOT EXISTS saw AS
     SELECT
         u.user_id,
-        '2016-04-01'::date AS webinar_date,
-        TO_DATE(u.date_registration, 'YYYY-MM-DD') AS registration_date,
+        CAST(u.date_registration AS DATE) AS registration_date,
         SUM(t.price) AS total_transactions
     FROM
-        webinar w
+        users u
     JOIN
-        users u ON w.email = u.email
+        webinar w ON u.email = w.email
     JOIN
         transactions t ON u.user_id = t.user_id
     WHERE
-        TO_DATE(u.date_registration, 'YYYY-MM-DD') > '2016-04-01'::date
+        CAST(u.date_registration AS DATE) > '2016-04-01'::date
     GROUP BY
-        u.user_id, TO_DATE(u.date_registration, 'YYYY-MM-DD');
+        u.user_id, CAST(u.date_registration AS DATE);
     """
     with postgres_engine.connect() as connection:
         connection.execute(query)
