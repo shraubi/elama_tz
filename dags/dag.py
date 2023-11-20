@@ -32,20 +32,11 @@ def load_csv_to_postgres(csv_files, table_names, postgres_engine):
 def create_materialized_view(postgres_engine):
     query = """
     CREATE MATERIALIZED VIEW IF NOT EXISTS saw AS
-    SELECT
-        u.user_id,
-        CAST(u.date_registration AS DATE) AS registration_date,
-        SUM(t.price) AS total_transactions
-    FROM
-        users u
-    JOIN
-        webinar w ON u.email = w.email
-    JOIN
-        transactions t ON u.user_id = t.user_id
-    WHERE
-        CAST(u.date_registration AS DATE) > '2016-04-01'::date
-    GROUP BY
-        u.user_id, CAST(u.date_registration AS DATE);
+    SELECT u.email, MIN(u.user_id) AS user_id, MIN(CAST(u.date_registration AS DATE)) AS registration_date, SUM(t.price) AS total_transactions
+    FROM users u
+    JOIN transactions t ON u.user_id = t.user_id
+    WHERE u.email IN (SELECT email FROM webinar) AND CAST(u.date_registration AS DATE) > '2016-04-01'::date
+    GROUP BY u.email;
     """
     with postgres_engine.connect() as connection:
         connection.execute(query)
